@@ -3,41 +3,22 @@ import javax.sound.sampled.*;
 
 public class Test {
 	public static void main (String [] args){
-		/*
-		File file = new File("AveMaria.mp3");
-		try {
-			AudioInputStream in= AudioSystem.getAudioInputStream(file);
-			System.out.print("pls");
-			AudioInputStream din = null;
-			AudioFormat baseFormat = in.getFormat();
-			AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 
-			                                            baseFormat.getSampleRate(),
-			                                            16,
-			                                            baseFormat.getChannels(),
-			                                            baseFormat.getChannels() * 2,
-			                                            baseFormat.getSampleRate(),
-			                                            false);
-			din = AudioSystem.getAudioInputStream(decodedFormat, in);
-		} catch (Exception e){
-			System.out.println(e.getMessage());
-		}
-		*/
 		testPlay("AveMaria.mp3");
 	}
 	public static void testPlay(String filename)
 	{
 	  try {
 	    File file = new File(filename);
-	    AudioInputStream in= AudioSystem.getAudioInputStream(file);
+	    AudioInputStream in = AudioSystem.getAudioInputStream(file);
 	    AudioInputStream din = null;
 	    AudioFormat baseFormat = in.getFormat();
 	    AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 
-	                                                                                  baseFormat.getSampleRate(),
-	                                                                                  16,
-	                                                                                  baseFormat.getChannels(),
-	                                                                                  baseFormat.getChannels() * 2,
-	                                                                                  baseFormat.getSampleRate(),
-	                                                                                  false);
+                                                      baseFormat.getSampleRate(),
+                                                      16,
+                                                      baseFormat.getChannels(),
+                                                      baseFormat.getChannels() * 2,
+                                                      baseFormat.getSampleRate(),
+                                                      false);
 	    din = AudioSystem.getAudioInputStream(decodedFormat, in);
 	    // Play now. 
 	    rawplay(decodedFormat, din);
