@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 import pylab as py
 
@@ -33,7 +32,7 @@ def b(n, L, accuracy = 1000):
     integration *= dx
     return (1 / L) * integration
 
-# Fourier series.   
+# Fourier series.
 def Sf(x, L, n = 10):
     a0 = a(0, L)
     sum = np.zeros(np.size(x))
