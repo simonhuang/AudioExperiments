@@ -36,7 +36,7 @@ norm = lambda x: cm.polar(x)[0]
 def fft_custom(signal):
     transformedSignal = np.array(fft(pad(signal)))
     
-    plt.plot([norm(x) for x in transformedSignal[0:8000]])
+    plt.plot([norm(x) for x in transformedSignal])
     plt.show()
     
     cleanedSignal = ifft(transformedSignal)
@@ -52,8 +52,20 @@ def fft_clean(signal):
 def fft(signal):
     transformedSignal = np.fft.fft(signal)
     return [norm(x) for x in transformedSignal]
+
+
+def binary_search(lst, val, low, high):
+    if (high <= low):
+        return low
+    middle = low + (high - low) / 2
+    if (lst[middle] == val):
+        return middle
+    elif (lst[middle] < val):
+        return binary_search(lst, val, middle + 1, high)
+    else:
+        return binary_search(lst, val, low, middle)
     
-audio_file = 'violin_notes/g_4.wav'
+audio_file = 'trumpet/trumpet-G5.wav'
 
 w = wave.open(audio_file)
 '''
@@ -63,13 +75,25 @@ print "frame rate: ", w.getframerate()
 print "number of frames: ", w.getnframes()
 print (w.getframerate()/w.getnframes())
 '''
-
+print "channels: ", w.getnchannels()
 np.set_printoptions(threshold=100)
 file_info =  read_wav.read(audio_file)[1]
-ch1 = map(lambda x: x[0], file_info)
-ch2 = map(lambda x: x[1], file_info)
 
-freqs = fft(ch1)
+chs = []
+print file_info
+
+if (w.getnchannels() == 1):
+    freqs = fft(file_info)
+else:   
+    for i in range(w.getnchannels()):
+        chs.append(map(lambda x: x[i], file_info))
+    freqs = fft(chs[0])
+
+
 convert_fps = float(w.getframerate())/float(w.getnframes())
 fps = map(lambda x: x * convert_fps, range(len(freqs)))
-plt.plot(freqs)
+
+upper_limit = binary_search(fps, 3000, 0, len(fps))
+
+plt.figure(figsize=(16,4))
+plt.plot(fps[0:upper_limit], freqs[0:upper_limit])
