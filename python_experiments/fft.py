@@ -3,16 +3,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import wave
 import scipy.io.wavfile as read_wav
+import note_info as notes
 
+# roots of unity
 def omega(p, q):
     return cm.exp((2.0 * cm.pi * 1j * q) / p)
 
+# fix for fft_custom if signal length is not a power of 2
 def pad(signal):
     k = 0
     while 2**k < len(signal):
         k += 1
     return signal + ([0] * (2**k - len(signal)))
 
+# custom fft in python
 def fft(signal):
     n = len(signal)
     if n == 1:
@@ -27,33 +31,15 @@ def fft(signal):
             combined[m + n/2] = f_even[m] - omega(n, -m) * f_odd[m]
         return combined
 
-def ifft(signal):
-    time_signal = fft([x.conjugate() for x in signal])
-    return [x.conjugate()/len(signal) for x in time_signal]
-
+# find norm of complex number
 norm = lambda x: cm.polar(x)[0]
 
-def fft_custom(signal):
-    transformedSignal = np.array(fft(pad(signal)))
-    
-    plt.plot([norm(x) for x in transformedSignal])
-    plt.show()
-    
-    cleanedSignal = ifft(transformedSignal)
-    return np.array(cleanedSignal, dtype=np.float64)
-
-
-def fft_clean(signal):
-    transformedSignal = np.fft.fft(signal)
-    
-    cleanedSignal = np.fft.ifft(transformedSignal)
-    return np.array(cleanedSignal, dtype=np.float64)
-
+# fft from numpy library
 def fft(signal):
-    transformedSignal = np.fft.fft(signal)
-    return [norm(x) for x in transformedSignal]
+    transformed_signal = np.fft.fft(signal)
+    return [norm(x) for x in transformed_signal]
 
-
+# binary search to find frequency for max freq for hearing (22kHz)
 def binary_search(lst, val, low, high):
     if (high <= low):
         return low
@@ -64,10 +50,12 @@ def binary_search(lst, val, low, high):
         return binary_search(lst, val, middle + 1, high)
     else:
         return binary_search(lst, val, low, middle)
-    
-audio_file = 'trumpet/trumpet-G5.wav'
+
+# read audio file
+audio_file = 'trumpet/trumpet-G3.wav'
 
 w = wave.open(audio_file)
+
 '''
 print "channels: ", w.getnchannels()
 print "sample width: ", w.getsampwidth()
@@ -75,6 +63,7 @@ print "frame rate: ", w.getframerate()
 print "number of frames: ", w.getnframes()
 print (w.getframerate()/w.getnframes())
 '''
+
 print "channels: ", w.getnchannels()
 np.set_printoptions(threshold=100)
 file_info =  read_wav.read(audio_file)[1]
@@ -82,18 +71,58 @@ file_info =  read_wav.read(audio_file)[1]
 chs = []
 print file_info
 
+# run fft on first channel if there are multiple
 if (w.getnchannels() == 1):
-    freqs = fft(file_info)
+    corr = fft(file_info)
 else:   
     for i in range(w.getnchannels()):
         chs.append(map(lambda x: x[i], file_info))
-    freqs = fft(chs[0])
+    corr = fft(chs[0])
 
-
+# get actual frequencies that will be mapped to coefficients
 convert_fps = float(w.getframerate())/float(w.getnframes())
-fps = map(lambda x: x * convert_fps, range(len(freqs)))
+freqs = map(lambda x: x * convert_fps, range(len(corr)))
 
-upper_limit = binary_search(fps, 3000, 0, len(fps))
+# get last index of frequency within max hearing range
+upper_limit = binary_search(freqs, 3000, 0, len(freqs))
+
+# truncate appropriately
+corr = np.asarray(corr[0:upper_limit])
+freqs = np.asarray(freqs[0:upper_limit])
+
+mean = np.mean(corr)
+std = np.std(corr)
+print mean, std
+
+# isolate potential peaks using mean and std
+peak_corr = []
+peak_fps = []
+for i, f in np.ndenumerate(corr):
+    if (f > mean + std):
+        peak_corr.append(corr[i])
+        peak_fps.append(freqs[i])
+
+# find notes based on frequencies and peaks
+note_indices = []
+index = 0
+magnitudes = [0] * len(notes.freqs)
+for i, s in enumerate(notes.splits[1:]):
+    max = 0
+    while (peak_fps[index] < s):
+        if (peak_corr[index] > max):
+            max = peak_corr[index]
+        index = index + 1
+        if (index >= len(peak_fps)):
+            break
+    if (index >= len(peak_fps)):
+        break
+    magnitudes[i] = max
+
+print magnitudes
+for i, m in enumerate(magnitudes):
+    if (m > 0):
+        print notes.info[i][0]
 
 plt.figure(figsize=(16,4))
-plt.plot(fps[0:upper_limit], freqs[0:upper_limit])
+plt.xlim(xmax = 1500)
+#plt.plot(str_fps, str_freqs)
