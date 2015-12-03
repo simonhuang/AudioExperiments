@@ -57,19 +57,20 @@ audio_file = 'trumpet/trumpet-G3.wav'
 w = wave.open(audio_file)
 
 '''
+# meta data
 print "channels: ", w.getnchannels()
 print "sample width: ", w.getsampwidth()
 print "frame rate: ", w.getframerate()
 print "number of frames: ", w.getnframes()
 print (w.getframerate()/w.getnframes())
+print "channels: ", w.getnchannels()
 '''
 
-print "channels: ", w.getnchannels()
 np.set_printoptions(threshold=100)
 file_info =  read_wav.read(audio_file)[1]
 
 chs = []
-print file_info
+#print file_info
 
 # run fft on first channel if there are multiple
 if (w.getnchannels() == 1):
@@ -83,24 +84,24 @@ else:
 convert_fps = float(w.getframerate())/float(w.getnframes())
 freqs = map(lambda x: x * convert_fps, range(len(corr)))
 
-# get last index of frequency within max hearing range
-upper_limit = binary_search(freqs, 3000, 0, len(freqs))
+# truncate factors for normal notes
+upper_limit = binary_search(freqs, notes.splits[-1], 0, len(freqs))
+lower_limit = binary_search(freqs, notes.splits[0], 0, len(freqs))
 
-# truncate appropriately
-corr = np.asarray(corr[0:upper_limit])
-freqs = np.asarray(freqs[0:upper_limit])
+# truncate
+corr = np.asarray(corr[lower_limit:upper_limit])
+freqs = np.asarray(freqs[lower_limit:upper_limit])
 
 mean = np.mean(corr)
 std = np.std(corr)
-print mean, std
 
 # isolate potential peaks using mean and std
 peak_corr = []
-peak_fps = []
+peak_freqs = []
 for i, f in np.ndenumerate(corr):
     if (f > mean + std):
         peak_corr.append(corr[i])
-        peak_fps.append(freqs[i])
+        peak_freqs.append(freqs[i])
 
 # find notes based on frequencies and peaks
 note_indices = []
@@ -108,21 +109,26 @@ index = 0
 magnitudes = [0] * len(notes.freqs)
 for i, s in enumerate(notes.splits[1:]):
     max = 0
-    while (peak_fps[index] < s):
+    while (peak_freqs[index] < s ):
         if (peak_corr[index] > max):
             max = peak_corr[index]
         index = index + 1
-        if (index >= len(peak_fps)):
+        if (index >= len(peak_freqs)):
             break
-    if (index >= len(peak_fps)):
+    if (index >= len(peak_freqs)):
         break
     magnitudes[i] = max
 
-print magnitudes
+# print notes that are present
 for i, m in enumerate(magnitudes):
     if (m > 0):
-        print notes.info[i][0]
+        print notes.info[i][0],
+print
 
+
+print peak_freqs[0:10]
+print peak_corr[0:10]
+   
 plt.figure(figsize=(16,4))
 plt.xlim(xmax = 1500)
-#plt.plot(str_fps, str_freqs)
+plt.plot(peak_freqs, peak_corr)
