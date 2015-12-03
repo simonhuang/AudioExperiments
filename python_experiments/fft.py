@@ -17,7 +17,7 @@ def pad(signal):
     return signal + ([0] * (2**k - len(signal)))
 
 # custom fft in python
-def fft(signal):
+def fft_custom(signal):
     n = len(signal)
     if n == 1:
         return signal
@@ -36,8 +36,10 @@ norm = lambda x: cm.polar(x)[0]
 
 # fft from numpy library
 def fft(signal):
-    transformed_signal = np.fft.fft(signal)
-    return [norm(x) for x in transformed_signal]
+    trans_signal = np.fft.fft(signal)
+    # remove symmetry
+    trans_signal = trans_signal[:len(trans_signal)/2]
+    return [norm(x) for x in trans_signal]
 
 # binary search to find frequency for max freq for hearing (22kHz)
 def binary_search(lst, val, low, high):
@@ -109,7 +111,7 @@ index = 0
 magnitudes = [0] * len(notes.freqs)
 for i, s in enumerate(notes.splits[1:]):
     max = 0
-    while (peak_freqs[index] < s ):
+    while (peak_freqs[index] < s):
         if (peak_corr[index] > max):
             max = peak_corr[index]
         index = index + 1
@@ -124,11 +126,6 @@ for i, m in enumerate(magnitudes):
     if (m > 0):
         print notes.info[i][0],
 print
-
-
-print peak_freqs[0:10]
-print peak_corr[0:10]
    
 plt.figure(figsize=(16,4))
-plt.xlim(xmax = 1500)
 plt.plot(peak_freqs, peak_corr)
